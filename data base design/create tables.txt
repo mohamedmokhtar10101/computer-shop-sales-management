@@ -1,0 +1,387 @@
+create table product(
+id varchar(100) not null,
+p_name varchar(100) not null,
+category varchar(100),
+cost double not null,
+price double not null,
+d_price double not null,
+quantity int not null,
+discount double not null default 0,
+image varchar(300) ,
+total_cost double not null default 0,
+sold_quantity int not null default 0,
+total_money double not null default 0,
+profits double not null default 0,
+primary key(id)
+
+
+
+
+
+)
+
+
+create table agent(
+id int not null auto_increment,
+ag_name varchar(100) not null,
+phone varchar(100) ,
+email varchar(100),
+total_debt double not null default 0,
+paid double not null default 0,
+remaining double not null default 0,
+redemption_date date ,date_ date,
+primary key(id)
+)
+create table orders(
+id int not null auto_increment,
+quantity int not null,
+day_ int not null,
+month_ int not null,
+year_ int not null,
+money double not null,
+agent_id int not null,
+primary key(id),
+foreign key(agent_id) references agent(id),
+check(day_<=30 and day_>0 and month_<=12 and month_>0 and year_ >2016)
+)
+
+
+create table order_products(
+order_id int not null,
+product_id varchar(100) not null,
+quantity int not null,
+primary key(order_id,product_id),
+foreign key (order_id) references orders(id),
+foreign key (product_id) references product(id)
+)
+create table supplier(
+id int not null auto_increment,
+s_name varchar(100) not null,
+phone varchar(100) not null,
+email varchar(100) not null,
+owing_money double not null default 0,
+image varchar(200) ,
+primary key(id)
+)
+
+create table supplier_products(
+supplier_id int not null,
+product_id varchar(100) not null,
+primary key(supplier_id,product_id),
+foreign key(supplier_id) references supplier(id),
+foreign key(product_id) references product(id)
+)
+
+create table supplier_orders(
+supplier_id int not null,
+order_id int not null,
+primary key(supplier_id,order_id) ,
+foreign key(supplier_id) references supplier(id),
+foreign key(order_id) references orders(id)
+)
+
+create table inventory
+(
+id int not null auto_increment,
+quantity int not null,
+inventory_date date not null,
+total_money double not null,
+primary key(id)
+)
+
+create table inventory_products(
+inventory_id int not null,
+product_id varchar(100) not null,
+primary key(inventory_id,product_id),
+foreign key(inventory_id) references inventory(id),
+foreign key(product_id) references product(id)
+)
+create table discards(
+ id int not null auto_increment,
+ quantity int not null,
+ data_ datetime not null  default current_timestamp,
+ total_cost double not null,
+ supplier_id int not null,
+ primary key(id),
+ foreign key(supplier_id) references supplier(id)
+)
+create table sales
+(
+id int not null auto_increment,
+day_ int not null,
+month_ int not null,
+year_ int not null,
+total_quantity int not null,
+sold_money double not null,
+profits double not null,
+primary key(id),
+check(day_<=30 and day_>0 and month_<=12 and month_>0 and year_ >2016)
+)
+create table sales_products(
+sales_id int not null,
+product_id varchar(100) not null,
+quantity int not null,
+discount double not null default 0,
+primary key(sales_id,product_id),
+foreign key(sales_id) references sales(id),
+foreign key(product_id) references product(id)
+)
+create table shortages(
+p_id varchar(100) default 0,
+name varchar(100) not null,
+date_ date ,
+primary key(p_id,name)
+)
+create table damaged(
+p_id varchar(100) not null,
+quantity int not null,
+total_loss double not null,
+primary key(p_id) ,
+foreign key(p_id) references product(id)
+)
+
+
+
+create table users
+(
+id int not null auto_increment,
+userName varchar(100) not null,
+password varchar(100) not null,privilege int not null default 1,
+primary key(id)
+
+
+)
+create table sold_product(
+product_id varchar(100) not null,
+name varchar(100) not null,
+day_ int not null,
+month_ int not null,
+year_ int not null,time_ TIME not null,
+discount int not null default 0,agent int not null default 0 ,
+quantity double not null default 1,
+profit double not null default 0,
+primary key(day_,month_,year_,product_id,time_),
+foreign key sproduct_fk (product_id) references product(id) on delete no action on update cascade,
+check(day_<=30 and day_>0 and month_<=12 and month_>0 and year_ >2017)
+
+
+
+
+
+
+
+)
+create table agentPayments 
+(
+agent_id int not null,
+paid double not null,
+date_time datetime not null default CURRENT_TIMESTAMP ,foreign key(agent_id) references agent(id) on update cascade on delete cascade
+
+
+
+
+);
+sold product trigger
+
+delimiter $$
+create trigger auto_sold_product before insert on sold_product
+for each row
+begin
+
+
+declare q int(22);
+declare p double;
+declare c double;
+declare d double;
+set q = new.quantity;
+set c = (select cost from product where id = new.product_id);
+set new.name = (select p_name from product where id = new.product_id);
+if new.agent!=0 then
+set d=0;
+end if;
+if new.agent !=0 then
+set p = (select d_price from product where id = new.product_id);
+else
+set p = (select price from product where id = new.product_id);
+end if;
+if new.discount !=0 then
+set d =(select discount from product where id = new.product_id);
+else 
+set d=0;
+end if;
+
+set new.profit = p*q-d*q-c*q;
+
+end
+delimiter $$
+create trigger itemProfit after insert on sold_product
+for each row
+begin
+
+
+update product 
+set profits = profits + new.profit
+where id = new.product_id;
+end
+delimiter $$
+create trigger itemsoldmoney after insert on sold_product
+for each row
+begin
+
+
+declare q int(22);
+declare p double;
+declare c double;
+declare d double;
+set q = new.quantity;
+if new.discount !=0 then
+set d =(select discount from product where id = new.product_id);
+else 
+set d=0;
+end if;
+if new.agent!=0 then
+set p = (select d_price from product where id = new.product_id);
+else
+set p = (select price from product where id = new.product_id);
+end if;
+update product
+set total_money = total_money+ (p*q-d*q)
+where id = new.product_id;
+end
+delimiter $$
+create trigger itemsoldquantity after insert on sold_product
+for each row
+begin
+
+
+declare q int(22);
+set q = new.quantity;
+
+
+update product
+set sold_quantity = sold_quantity+ q
+where id = new.product_id;
+end
+delimiter $$
+create trigger subQuantity after insert on sold_product
+for each row
+begin
+
+update product
+set quantity = quantity - new.quantity
+where id = new.product_id;
+end
+
+product triggers
+
+delimiter $$
+create trigger soldproductidname before update on product
+for each row
+begin
+
+
+if new.p_name != old.p_name then
+update sold_product
+set  name= new.p_name
+where product_id = old.id;
+end if;
+end
+
+delimiter $$
+create trigger soldproductidnamedel before delete on product
+for each row
+begin
+
+
+
+update sold_product
+set product_id =  0 
+where product_id = old.id;
+end
+delimiter $$
+create trigger shortagesdel before delete on product
+for each row
+begin
+
+
+
+delete from shortages
+where p_id = old.id;
+end
+
+shortages triggers
+
+delimiter $$
+create trigger shortagesidname before update on product
+for each row
+begin
+
+
+if new.p_name != old.p_name then
+update shortages
+set  name= new.p_name
+where p_id = old.id;
+end if;
+if new.id != old.id then
+update shortages
+set  p_id= new.id
+where p_id = old.id;
+end if;
+if new.quantity !=old.quantity && new.quantity=0 then
+insert into shortages
+values(new.id,new.p_name,curdate());
+
+end if;
+if new.quantity !=old.quantity && new.quantity!=0 then
+delete from shortages 
+where p_id = old.id or p_id =old.id;
+
+
+end if;
+end
+delimiter $$
+create trigger shortagesadd before insert on product
+for each row
+begin
+
+
+
+if  new.quantity=0 then
+insert into shortages
+values(new.id,new.p_name,curdate());
+end if;
+end
+
+agent triggers
+
+delimiter $$
+create trigger insertag before insert on agent
+for each row
+begin
+
+set new.remaining = new.total_debt - new.paid;
+
+end
+delimiter $$
+create trigger updateag before update on agent
+for each row
+begin
+
+set new.remaining = new.total_debt - new.paid;
+
+end
+
+delimiter $$
+create trigger agentpaymentsinserting before update on agent
+for each row
+begin
+
+
+if new.paid != old.paid then
+insert into agentPayments
+(agent_id,paid)
+values (new.id,new.paid-old.paid);
+end if;
+end
+
+
