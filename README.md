@@ -1,8 +1,8 @@
 # computer_shop_sales_management
-a sales management application 
-a computer shop web application to manage sales , profits , total number of products and so on
+A sales management application 
+A computer shop web application to manage sales , profits , total number of products and so on
 
-application features :
+Application features :
 
 1- add new items
 
